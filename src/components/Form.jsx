@@ -99,7 +99,6 @@ const FormModal = ({
 
   return (
     <>
-      {/* <pre>{JSON.stringify(formValues, null, 2)}</pre> */}
       <Modal
         open={isModalOpen}
         title={initialValues.id ? "Update Record" : "Create a new record"}
@@ -122,7 +121,7 @@ const FormModal = ({
         )}
       >
         {columns
-          .filter((c) => c.dataIndex)
+          .filter((c) => c.dataIndex && c.type !== "computed")
           .map(({ key, title, rules, type, options, ddSource }) => {
             switch (type) {
               case "text":

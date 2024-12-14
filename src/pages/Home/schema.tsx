@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 
 const schema = {
   sheetName: 'Records',
+
   fields : [
     {
       title: '📝 Task',
@@ -117,7 +118,86 @@ const schema = {
       type: 'creatable_select',
       ddSource: 'DD_Users',
     },
-  ]
+    {
+      title: '⌛ Duration',
+      dataIndex: 'duration',
+      key: 'duration',
+      type: 'computed',
+      dependencies: ['startDate', 'endDate', 'dueDate', 'status'],
+      compute: (record) => {
+        if (!record.startDate || !record.endDate) return null;
+        
+        const start = dayjs(record.startDate);
+        const end = dayjs(record.endDate);
+        const due = record.dueDate ? dayjs(record.dueDate) : null;
+        
+        const duration = end.diff(start, 'day');
+        let variance = 0;
+        
+        if (due && record.status === 'Done') {
+          variance = due.diff(end, 'day');
+        }
+        
+        return {
+          days: duration,
+          variance: variance
+        };
+      },
+      render: (_, record) => {
+        if (!record.duration) return null;
+        
+        const { days, variance } = record.duration;
+        let varianceTag = null;
+        
+        if (record.status === 'Done' && variance !== 0) {
+          const color = variance > 0 ? 'green' : 'red';
+          const text = variance > 0 
+            ? `Early by ${variance} days`
+            : `Delayed by ${Math.abs(variance)} days`;
+            
+          varianceTag = (
+            <Tag color={color} style={{ marginLeft: 8 }}>
+              {text}
+            </Tag>
+          );
+        }
+        
+        return (
+          <Space>
+            <Tag color="blue">
+              {days} days
+            </Tag>
+            {varianceTag}
+          </Space>
+        );
+      }
+    },
+  ],
+  filterSchema: {
+    task: {
+      type: 'text',
+      placeholder: 'Search task...'
+    },
+    project: {
+      type: 'select',
+      placeholder: 'Filter by project',
+      ddSource: 'DD_Projects'
+    },
+    status: {
+      type: 'select',
+      placeholder: 'Filter by status',
+      options: ['To Do', 'In Progress', 'Done']
+    },
+    dueDate: {
+      type: 'date_range',
+      placeholder: ['Start date', 'End date']
+    },
+    assignedTo: {
+      type: 'select',
+      placeholder: 'Filter by assignee',
+      ddSource: 'DD_Users'
+    }
+  },
 
 }
 

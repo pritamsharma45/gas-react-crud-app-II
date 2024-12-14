@@ -29,7 +29,7 @@ const schema = {
         { required: true, message: 'Please enter the budget amount' },
         { type: 'number', min: 0, message: 'Amount must be a positive number' },
       ],
-      render: (amount) => `$${amount?.toLocaleString() || '0.00'}`,
+      render: (amount) => `$${Number(amount)?.toLocaleString() || '0.00'}`,
     },
     {
       title: '💸 Spent Amount',
@@ -37,14 +37,63 @@ const schema = {
       key: 'spentAmount',
       type: 'number',
       rules: [{ type: 'number', min: 0, message: 'Amount must be a positive number' }],
-      render: (amount, { budgetAmount }) => {
-        const color = amount > budgetAmount ? 'red' : 'green';
+      render: (amount) => {
+        if (!amount) return '$0.00';
+        return `$${Number(amount).toLocaleString()}`;
+      },
+    },
+    {
+      title: '⚖️ Balance',
+      dataIndex: 'balance',
+      key: 'balance',
+      type: 'computed',
+      dependencies: ['budgetAmount', 'spentAmount'],
+      compute: (record) => {
+        const budget = parseFloat(record.budgetAmount) || 0;
+        const spent = parseFloat(record.spentAmount) || 0;
+        return budget - spent;
+      },
+      render: (_, record) => {
+        const balance = record.balance;
+        let color = 'green';
+        if (balance < 0) {
+          color = 'red';
+        } else if (balance === 0) {
+          color = 'orange';
+        }
         return (
-          <Tag color={color} key={amount}>
-            ${amount?.toLocaleString() || '0.00'}
+          <Tag color={color}>
+            ${Number(balance)?.toLocaleString() || '0.00'}
           </Tag>
         );
+      }
+    },
+    {
+      title: '📈 % Used',
+      dataIndex: 'percentageUsed',
+      key: 'percentageUsed',
+      type: 'computed',
+      dependencies: ['budgetAmount', 'spentAmount'],
+      compute: (record) => {
+        const budget = parseFloat(record.budgetAmount) || 0;
+        const spent = parseFloat(record.spentAmount) || 0;
+        if (budget === 0) return 0;
+        return (spent / budget) * 100;
       },
+      render: (_, record) => {
+        const percentage = record.percentageUsed;
+        let color = 'green';
+        if (percentage >= 100) {
+          color = 'red';
+        } else if (percentage >= 80) {
+          color = 'orange';
+        }
+        return (
+          <Tag color={color}>
+            {percentage.toFixed(1)}%
+          </Tag>
+        );
+      }
     },
     {
       title: '🗓️ Start Date',
@@ -109,6 +158,32 @@ const schema = {
       ddSource: 'DD_Users',
     },
   ],
+  filterSchema: {
+    project: {
+      type: 'select',
+      placeholder: 'Filter by project',
+      ddSource: 'DD_Projects'
+    },
+    accountCategory: {
+      type: 'select',
+      placeholder: 'Filter by category',
+      options: ['Personnel', 'Equipment', 'Supplies', 'Travel', 'Other']
+    },
+    status: {
+      type: 'select',
+      placeholder: 'Filter by status',
+      options: ['Planned', 'Ongoing', 'Completed', 'Over Budget']
+    },
+    startDate: {
+      type: 'date_range',
+      placeholder: ['Start date', 'End date']
+    },
+    approver: {
+      type: 'select',
+      placeholder: 'Filter by approver',
+      ddSource: 'DD_Users'
+    }
+  }
 };
 
 export default schema;
